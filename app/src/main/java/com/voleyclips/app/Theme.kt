@@ -5,31 +5,32 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-val VcInk = Color(0xFF0A111C)
-val VcPanel = Color(0xFF121C2B)
-val VcPanel2 = Color(0xFF1B2840)
-val VcBlue = Color(0xFF7A9CFF)
-val VcYellow = Color(0xFFF5C518)
-val VcYellowInk = Color(0xFF1C1500)
-val VcText = Color(0xFFE8EEF7)
-val VcMuted = Color(0xFF9DAEC4)
-val VcRed = Color(0xFFE5484D)
+// Carmesí y blanco sobre fondo oscuro neutro (con un leve tono cálido).
+val VcInk = Color(0xFF110C0D)
+val VcPanel = Color(0xFF1B1315)
+val VcPanel2 = Color(0xFF271B1E)
+val VcCrimson = Color(0xFFDC143C)
+val VcAccent = Color(0xFFFFFFFF)
+val VcOnAccent = Color(0xFF2A0A10)
+val VcText = Color(0xFFF4EEEF)
+val VcMuted = Color(0xFFBDB0B3)
+val VcRed = VcCrimson
 
 @Composable
 fun VoleyTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = darkColorScheme(
-            primary = VcBlue,
-            onPrimary = VcInk,
-            secondary = VcYellow,
-            onSecondary = VcYellowInk,
+            primary = VcCrimson,
+            onPrimary = Color.White,
+            secondary = VcAccent,
+            onSecondary = VcOnAccent,
             background = VcInk,
             onBackground = VcText,
             surface = VcPanel,
             onSurface = VcText,
             surfaceVariant = VcPanel2,
             onSurfaceVariant = VcMuted,
-            error = VcRed,
+            error = Color(0xFFFF6B7F),
         ),
         content = content,
     )

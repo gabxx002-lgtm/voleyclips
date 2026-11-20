@@ -19,6 +19,10 @@ import java.nio.ByteBuffer
 const val GESTURE_MODEL_URL =
     "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/latest/gesture_recognizer.task"
 
+/** Códigos que devuelve el vigilante además de 10, 20 y 30 (segundos de jugada). */
+const val GESTURE_POINT_A = 101 // ☝ un dedo arriba: punto para el equipo A
+const val GESTURE_POINT_B = 102 // 🤟 "te quiero" (pulgar, índice y meñique): punto para el equipo B
+
 object GestureModel {
     fun file(ctx: Context) = File(ctx.filesDir, "gesture_recognizer.task")
 
@@ -94,6 +98,8 @@ class GestureWatcher(
             "Thumb_Up" -> 10
             "Victory" -> 20
             "Open_Palm" -> 30
+            "Pointing_Up" -> GESTURE_POINT_A
+            "ILoveYou" -> GESTURE_POINT_B
             else -> 0
         }
         if (secs == 0) {
@@ -145,8 +151,8 @@ class GestureWatcher(
     }
 
     companion object {
-        const val HOLD_FRAMES = 3      // unos 0,5 s con el gesto firme
+        const val HOLD_FRAMES = 3      // unos 0,6 s con el gesto firme
         const val COOLDOWN_MS = 4_000L // después de guardar una jugada, espera antes de aceptar otro gesto
-        const val FRAME_GAP_MS = 140L  // unos 7 cuadros por segundo alcanzan y gastan poca batería
+        const val FRAME_GAP_MS = 200L  // 5 cuadros por segundo alcanzan y dejan al celular libre para grabar fluido
     }
 }

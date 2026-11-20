@@ -2,7 +2,9 @@ package com.voleyclips.app
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Handler
 import android.os.Looper
 import android.os.StatFs
@@ -62,6 +64,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
@@ -150,9 +153,21 @@ private fun RecordContent(setup: RecordSetup, onFinished: (String) -> Unit, onCa
         onDispose { view.keepScreenOn = false }
     }
 
+    // Al grabar la pantalla se pone horizontal; al salir vuelve a vertical.
+    DisposableEffect(Unit) {
+        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        onDispose { activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
+    }
+    val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+
     val matchId = remember { System.currentTimeMillis().toString() }
     val createdAt = remember { System.currentTimeMillis() }
-    val previewView = remember { PreviewView(ctx).apply { scaleType = PreviewView.ScaleType.FIT_CENTER } }
+    val previewView = remember {
+        PreviewView(ctx).apply {
+            scaleType = PreviewView.ScaleType.FIT_CENTER
+            implementationMode = PreviewView.ImplementationMode.PERFORMANCE // vista previa más liviana
+        }
+    }
     var videoCapture by remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
     var recording by remember { mutableStateOf<Recording?>(null) }
     var isRecording by remember { mutableStateOf(false) }
@@ -166,6 +181,14 @@ private fun RecordContent(setup: RecordSetup, onFinished: (String) -> Unit, onCa
     var gestureState by remember { mutableStateOf("Preparando los gestos…") }
     val watcherHolder = remember { arrayOfNulls<GestureWatcher>(1) }
     val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
+    val analysisRef = remember { arrayOfNulls<ImageAnalysis>(1) }
+    var gesturesOn by remember { mutableStateOf(true) }
+    val analyzerFn = remember {
+        ImageAnalysis.Analyzer { image ->
+            val w = watcherHolder[0]
+            if (w != null) w.analyze(image) else image.close()
+        }
+    }
     val freeGb = remember { StatFs(ctx.filesDir.absolutePath).availableBytes / 1_073_741_824.0 }
 
     fun nowMs(): Long = if (startRef[0] == 0L) 0L else SystemClock.elapsedRealtime() - startRef[0]
@@ -201,8 +224,32 @@ private fun RecordContent(setup: RecordSetup, onFinished: (String) -> Unit, onCa
         if (history.isNotEmpty()) score = history.removeAt(history.lastIndex)
     }
 
+    /** Qué hacer cuando la cámara reconoce un gesto. */
+    fun onGestureCode(code: Int) {
+        when (code) {
+            GESTURE_POINT_A -> if (isRecording) {
+                point(1)
+                info = "Gesto: punto para " + setup.teamA
+            }
+            GESTURE_POINT_B -> if (isRecording) {
+                point(2)
+                info = "Gesto: punto para " + setup.teamB
+            }
+            else -> saveClip(code, GESTURE_LEAD_MS, "Gesto")
+        }
+    }
+
+    /** Apagar los gestos libera al celular: la cámara deja de analizar imágenes. */
+    fun setGestures(on: Boolean) {
+        gesturesOn = on
+        val a = analysisRef[0] ?: return
+        if (on) a.setAnalyzer(analysisExecutor, analyzerFn) else a.clearAnalyzer()
+    }
+
     // Cámara: vista previa + grabación + análisis de gestos. Si el celular no deja las tres a la vez, se apagan los gestos.
-    DisposableEffect(Unit) {
+    // Se espera a que la pantalla ya esté horizontal para que el video no salga girado.
+    DisposableEffect(landscape) {
+        if (!landscape) return@DisposableEffect onDispose { }
         val future = ProcessCameraProvider.getInstance(ctx)
         future.addListener({
             try {
@@ -217,17 +264,15 @@ private fun RecordContent(setup: RecordSetup, onFinished: (String) -> Unit, onCa
                     .setResolutionSelector(
                         ResolutionSelector.Builder()
                             .setResolutionStrategy(
-                                ResolutionStrategy(android.util.Size(640, 480), ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER)
+                                ResolutionStrategy(android.util.Size(480, 360), ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER)
                             )
                             .build()
                     )
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                     .build()
-                analysis.setAnalyzer(analysisExecutor) { image ->
-                    val w = watcherHolder[0]
-                    if (w != null) w.analyze(image) else image.close()
-                }
+                analysisRef[0] = analysis
+                if (gesturesOn) analysis.setAnalyzer(analysisExecutor, analyzerFn)
                 provider.unbindAll()
                 try {
                     provider.bindToLifecycle(activity, CameraSelector.DEFAULT_BACK_CAMERA, preview, capture, analysis)
@@ -247,8 +292,11 @@ private fun RecordContent(setup: RecordSetup, onFinished: (String) -> Unit, onCa
             } catch (e: Exception) {
                 // la cámara ya estaba liberada
             }
-            analysisExecutor.shutdown()
+            analysisRef[0] = null
         }
+    }
+    DisposableEffect(Unit) {
+        onDispose { analysisExecutor.shutdown() }
     }
 
     // Modelo de gestos: se baja una vez y después funciona sin internet.
@@ -261,7 +309,7 @@ private fun RecordContent(setup: RecordSetup, onFinished: (String) -> Unit, onCa
                 return@LaunchedEffect
             }
         }
-        val w = GestureWatcher(ctx) { secs -> mainHandler.post { saveClip(secs, GESTURE_LEAD_MS, "Gesto") } }
+        val w = GestureWatcher(ctx) { code -> mainHandler.post { onGestureCode(code) } }
         val err = withContext(Dispatchers.Default) { w.start() }
         if (err != null) {
             w.close()
@@ -302,8 +350,9 @@ private fun RecordContent(setup: RecordSetup, onFinished: (String) -> Unit, onCa
 
     LaunchedEffect(isRecording) {
         while (isRecording) {
-            elapsedMs = nowMs()
-            delay(250)
+            val s = nowMs() / 1000 * 1000
+            if (s != elapsedMs) elapsedMs = s // solo se redibuja cuando cambia el segundo
+            delay(300)
         }
     }
 
@@ -377,7 +426,7 @@ private fun RecordContent(setup: RecordSetup, onFinished: (String) -> Unit, onCa
                 Spacer(Modifier.width(10.dp))
                 Text(clips.size.toString() + " jugadas", color = Color.White, fontSize = 14.sp)
             }
-            Text(gestureState, color = Color(0xFFB8C6DB), fontSize = 12.sp)
+            Text(gestureState, color = Color(0xFFBDB0B3), fontSize = 12.sp)
         }
 
         // Último aviso
@@ -388,9 +437,9 @@ private fun RecordContent(setup: RecordSetup, onFinished: (String) -> Unit, onCa
                     .align(Alignment.BottomStart)
                     .safeDrawingPadding()
                     .padding(10.dp)
-                    .background(VcYellow, RoundedCornerShape(8.dp))
+                    .background(VcAccent, RoundedCornerShape(8.dp))
                     .padding(horizontal = 12.dp, vertical = 6.dp),
-                color = VcYellowInk,
+                color = VcOnAccent,
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
             )
@@ -403,7 +452,7 @@ private fun RecordContent(setup: RecordSetup, onFinished: (String) -> Unit, onCa
                 .safeDrawingPadding()
                 .padding(10.dp)
                 .width(300.dp)
-                .background(Color(0xDD0A111C), RoundedCornerShape(16.dp))
+                .background(Color(0xDD110C0D), RoundedCornerShape(16.dp))
                 .padding(12.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -414,13 +463,17 @@ private fun RecordContent(setup: RecordSetup, onFinished: (String) -> Unit, onCa
                 canUndo = history.isNotEmpty(), onPoint = { point(it) }, onUndo = { undo() },
             )
 
+            OutlinedButton(onClick = { setGestures(!gesturesOn) }, modifier = Modifier.fillMaxWidth()) {
+                Text(if (gesturesOn) "Gestos: activados" else "Gestos: apagados (más fluido)", fontSize = 13.sp)
+            }
+
             if (isRecording) {
-                Text("Guardar jugada (los segundos de antes)", color = Color(0xFF9DAEC4), fontSize = 12.sp)
+                Text("Guardar jugada (los segundos de antes)", color = Color(0xFFBDB0B3), fontSize = 12.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(10, 20, 30).forEach { s ->
                         Button(
                             onClick = { saveClip(s, 500L, "Botón") },
-                            colors = ButtonDefaults.buttonColors(containerColor = VcYellow, contentColor = VcYellowInk),
+                            colors = ButtonDefaults.buttonColors(containerColor = VcCrimson, contentColor = Color.White),
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                             modifier = Modifier
                                 .weight(1f)
@@ -429,12 +482,12 @@ private fun RecordContent(setup: RecordSetup, onFinished: (String) -> Unit, onCa
                     }
                 }
                 Text(
-                    "Gesto frente al lente: 👍 10 s · ✌ 20 s · ✋ 30 s\nVolumen: 1, 2 o 3 toques",
-                    color = Color(0xFFB8C6DB), fontSize = 12.sp,
+                    "Gestos frente al lente:\n👍 10 s · ✌ 20 s · ✋ 30 s\n☝ punto " + setup.teamA + " · 🤟 punto " + setup.teamB + "\nVolumen: 1, 2 o 3 toques",
+                    color = Color(0xFFBDB0B3), fontSize = 12.sp,
                 )
                 Button(
                     onClick = { recording?.stop() },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A3A52), contentColor = Color.White),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3A2A2E), contentColor = Color.White),
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text("Detener y guardar jugadas") }
             } else {
@@ -448,7 +501,7 @@ private fun RecordContent(setup: RecordSetup, onFinished: (String) -> Unit, onCa
                 ) { Text("Grabar", fontSize = 18.sp, fontWeight = FontWeight.Bold) }
                 Text(
                     "Espacio libre: " + "%.1f".format(freeGb).replace('.', ',') + " GB. Mientras grabas el video completo ocupa espacio (aprox. 2 a 4 GB por hora en HD, 4 a 7 GB en Full HD). Al terminar se queda solo con las jugadas.",
-                    color = Color(0xFFB8C6DB), fontSize = 12.sp,
+                    color = Color(0xFFBDB0B3), fontSize = 12.sp,
                 )
                 TextButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) { Text("Salir") }
                 val err = error
@@ -478,10 +531,10 @@ private fun ScorePanel(
         val target = setTarget(mode, parkTarget, score)
         Text(
             if (over) "Partido terminado" else "Set " + (score.setsA + score.setsB + 1) + " · a " + target + ", con 2 de diferencia",
-            color = Color(0xFFB8C6DB), fontSize = 12.sp,
+            color = Color(0xFFBDB0B3), fontSize = 12.sp,
         )
         if (score.played.isNotEmpty()) {
-            Text("Sets: " + score.played.joinToString(", "), color = Color(0xFFB8C6DB), fontSize = 12.sp)
+            Text("Sets: " + score.played.joinToString(", "), color = Color(0xFFBDB0B3), fontSize = 12.sp)
         }
         OutlinedButton(onClick = onUndo, enabled = canUndo, modifier = Modifier.fillMaxWidth()) { Text("Deshacer último punto") }
     }
@@ -491,8 +544,8 @@ private fun ScorePanel(
 private fun TeamColumn(name: String, pts: Int, sets: Int, enabled: Boolean, modifier: Modifier, onPlus: () -> Unit) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(name, color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1, fontSize = 14.sp)
-        Text(pts.toString(), color = VcYellow, fontSize = 44.sp, fontWeight = FontWeight.ExtraBold, fontFamily = FontFamily.Monospace)
-        Text("Sets: $sets", color = Color(0xFFB8C6DB), fontSize = 12.sp)
+        Text(pts.toString(), color = VcAccent, fontSize = 44.sp, fontWeight = FontWeight.ExtraBold, fontFamily = FontFamily.Monospace)
+        Text("Sets: $sets", color = Color(0xFFBDB0B3), fontSize = 12.sp)
         Button(
             onClick = onPlus,
             enabled = enabled,

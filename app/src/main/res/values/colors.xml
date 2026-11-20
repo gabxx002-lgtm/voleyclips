@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="app_bg">#0A111C</color>
-    <color name="ic_bg">#0D1A2B</color>
+    <color name="app_bg">#110C0D</color>
+    <color name="ic_bg">#DC143C</color>
 </resources>

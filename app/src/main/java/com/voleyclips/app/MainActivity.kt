@@ -7,6 +7,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,8 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -94,7 +94,7 @@ fun App() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun HomeScreen(onNew: (RecordSetup) -> Unit, onOpen: (String) -> Unit) {
     val ctx = LocalContext.current
@@ -128,19 +128,15 @@ fun HomeScreen(onNew: (RecordSetup) -> Unit, onOpen: (String) -> Unit) {
         }
     }
 
-    Row(
+    Column(
         Modifier
             .fillMaxSize()
             .safeDrawingPadding()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Column(
-            Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("VoleyClips", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.secondary)
             Text(
                 "Graba el partido, marca los puntos y quédate solo con las jugadas.",
@@ -163,17 +159,17 @@ fun HomeScreen(onNew: (RecordSetup) -> Unit, onOpen: (String) -> Unit) {
                     singleLine = true, modifier = Modifier.weight(1f),
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                FilterChip(selected = mode == "oficial", onClick = { mode = "oficial" }, label = { Text("Oficial (25)") })
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = mode == "oficial", onClick = { mode = "oficial" }, label = { Text("Oficial (a 25)") })
                 FilterChip(selected = mode == "parque", onClick = { mode = "parque" }, label = { Text("Parque") })
                 if (mode == "parque") {
                     FilterChip(selected = parkTarget == 15, onClick = { parkTarget = 15 }, label = { Text("a 15") })
                     FilterChip(selected = parkTarget == 21, onClick = { parkTarget = 21 }, label = { Text("a 21") })
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Calidad:", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                FilterChip(selected = quality == "HD", onClick = { quality = "HD" }, label = { Text("720p (ocupa menos)") })
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.Center) {
+                Text("Calidad:", modifier = Modifier.padding(top = 14.dp, end = 4.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                FilterChip(selected = quality == "HD", onClick = { quality = "HD" }, label = { Text("720p (liviano)") })
                 FilterChip(selected = quality == "FHD", onClick = { quality = "FHD" }, label = { Text("1080p") })
             }
             Button(
@@ -197,14 +193,14 @@ fun HomeScreen(onNew: (RecordSetup) -> Unit, onOpen: (String) -> Unit) {
             ) { Text(if (importing) "Importando video…" else "Usar un video de la galería") }
         }
 
-        Column(Modifier.weight(1f)) {
+        Column {
             Text("Partidos", fontSize = 22.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             if (matches.isEmpty()) {
                 Text("Todavía no hay partidos. Cuando grabes uno aparece acá.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(matches, key = { it.id }) { m ->
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    matches.forEach { m ->
                         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                             Row(
                                 Modifier

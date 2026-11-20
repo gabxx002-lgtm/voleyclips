@@ -4,8 +4,10 @@ App para grabar partidos de voleibol (oficiales o de parque), llevar el marcador
 
 ## Cómo se usa
 
+0. La app se ve en vertical en el inicio y en la revisión, y gira sola a horizontal mientras grabas.
 1. En el inicio pones el nombre del partido, los dos equipos, el modo (Oficial o Parque, a 15 o a 21) y la calidad (720p ocupa menos, 1080p se ve mejor).
 2. Tocas **Grabar** y dejas el celular en un trípode. La pantalla muestra el marcador a la derecha: **+1** para cada equipo, **Deshacer** y el set en juego. El set se cierra solo al llegar al objetivo con 2 puntos de diferencia (Oficial: 25, y 15 en el quinto set; el partido termina a 3 sets).
+   Para los puntos también hay gestos: ☝ (un dedo arriba) suma un punto al equipo A y 🤟 (pulgar, índice y meñique) al equipo B.
 3. Cuando pasa una jugada buena, la guardas de tres formas:
    - **Gesto de mano frente al lente:** 👍 guarda los 10 s anteriores, ✌ los 20 s, ✋ los 30 s. Sostén el gesto medio segundo.
    - **Botones 10 s / 20 s / 30 s** en la pantalla.
@@ -18,6 +20,7 @@ App para grabar partidos de voleibol (oficiales o de parque), llevar el marcador
 - El gesto sale en el video, así que la jugada termina unos 2,5 s antes de que lo hicieras.
 - El video completo se guarda mientras grabas (aprox. 2 a 4 GB por hora en 720p). Solo se libera cuando guardas las jugadas sueltas y borras el original.
 - La primera vez que abres la grabación necesita internet para bajar el modelo de gestos (unos 8 MB). Después funciona sin conexión.
+- Si la grabación se traba, apaga los gestos con el botón "Gestos" del panel: la cámara deja de analizar imágenes y queda más liviana.
 - El zoom automático que sigue al jugador todavía no está en la app; el zoom actual se fija a mano en cada jugada.
 - También puedes **importar un video de la galería** y marcar las jugadas a mano.
 

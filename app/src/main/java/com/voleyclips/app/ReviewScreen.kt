@@ -261,16 +261,16 @@ private fun ReviewContent(m0: Match, onBack: () -> Unit) {
     val selected = clips.firstOrNull { it.id == selId }
     val totalMs = clips.sumOf { clipEnd(it, durationMs) - clipStart(it) }
 
-    Row(
+    Column(
         Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .safeDrawingPadding()
             .padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         /* ---------- Izquierda: video ---------- */
-        Column(Modifier.weight(1.3f).fillMaxHeight()) {
+        Column(Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = {
                     player.pause()
@@ -282,9 +282,7 @@ private fun ReviewContent(m0: Match, onBack: () -> Unit) {
                 Text("Marcador final: " + m0.finalScore, fontSize = 13.sp, color = MaterialTheme.colorScheme.secondary)
             }
             Box(
-                Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
+                Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center,
             ) {
                 if (videoDeleted) {
@@ -292,7 +290,8 @@ private fun ReviewContent(m0: Match, onBack: () -> Unit) {
                 } else {
                     Box(
                         Modifier
-                            .aspectRatio(ratio, matchHeightConstraintsFirst = true)
+                            .fillMaxWidth()
+                            .aspectRatio(ratio)
                             .clipToBounds()
                             .background(Color.Black)
                             .onSizeChanged {
@@ -324,7 +323,7 @@ private fun ReviewContent(m0: Match, onBack: () -> Unit) {
                             Box(
                                 Modifier
                                     .fillMaxSize()
-                                    .border(3.dp, VcYellow)
+                                    .border(3.dp, VcAccent)
                                     .pointerInput(selId) {
                                         detectTapGestures { offset ->
                                             val c = clips.firstOrNull { it.id == selId }
@@ -346,9 +345,9 @@ private fun ReviewContent(m0: Match, onBack: () -> Unit) {
                                     "Toca al jugador o al balón",
                                     modifier = Modifier
                                         .padding(8.dp)
-                                        .background(VcYellow, RoundedCornerShape(8.dp))
+                                        .background(VcAccent, RoundedCornerShape(8.dp))
                                         .padding(horizontal = 12.dp, vertical = 6.dp),
-                                    color = VcYellowInk,
+                                    color = VcOnAccent,
                                     fontWeight = FontWeight.Bold,
                                 )
                             }
@@ -357,8 +356,8 @@ private fun ReviewContent(m0: Match, onBack: () -> Unit) {
                         if (s != null && (s.fset || focusMode) && previewId == null) {
                             Canvas(Modifier.fillMaxSize()) {
                                 val center = Offset(s.fx * size.width, s.fy * size.height)
-                                drawCircle(VcYellow, radius = 22.dp.toPx(), center = center, style = Stroke(width = 3.dp.toPx()))
-                                drawCircle(VcYellow, radius = 3.dp.toPx(), center = center)
+                                drawCircle(VcAccent, radius = 22.dp.toPx(), center = center, style = Stroke(width = 3.dp.toPx()))
+                                drawCircle(VcAccent, radius = 3.dp.toPx(), center = center)
                             }
                         }
                     }
@@ -398,7 +397,7 @@ private fun ReviewContent(m0: Match, onBack: () -> Unit) {
         }
 
         /* ---------- Derecha: jugadas ---------- */
-        Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("Jugadas (" + clips.size + ")", fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 OutlinedButton(
@@ -416,7 +415,7 @@ private fun ReviewContent(m0: Match, onBack: () -> Unit) {
                 onClick = { startExport(clips, "resumen") },
                 enabled = clips.isNotEmpty() && !videoDeleted && !exporting,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = VcYellow, contentColor = VcYellowInk),
+                colors = ButtonDefaults.buttonColors(containerColor = VcAccent, contentColor = VcOnAccent),
             ) {
                 Text(
                     if (clips.isEmpty()) "Marca jugadas para armar el resumen"
@@ -560,16 +559,19 @@ private fun ClipCard(
                     FilterChip(selected = c.tag == t, onClick = { onChange(c.copy(tag = t)) }, label = { Text(t, fontSize = 12.sp) }, enabled = enabled)
                 }
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Antes", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(52.dp))
-                Stepper(enabled, (c.preMs / 1000).toString() + " s",
-                    onMinus = { onChange(c.copy(preMs = (c.preMs - 1000).coerceIn(1000L, 30000L))) },
-                    onPlus = { onChange(c.copy(preMs = (c.preMs + 1000).coerceIn(1000L, 30000L))) })
-                Spacer(Modifier.width(12.dp))
-                Text("Después", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(62.dp))
-                Stepper(enabled, (c.postMs / 1000).toString() + " s",
-                    onMinus = { onChange(c.copy(postMs = (c.postMs - 1000).coerceIn(1000L, 20000L))) },
-                    onPlus = { onChange(c.copy(postMs = (c.postMs + 1000).coerceIn(1000L, 20000L))) })
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Antes", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(46.dp))
+                    Stepper(enabled, (c.preMs / 1000).toString() + " s",
+                        onMinus = { onChange(c.copy(preMs = (c.preMs - 1000).coerceIn(1000L, 30000L))) },
+                        onPlus = { onChange(c.copy(preMs = (c.preMs + 1000).coerceIn(1000L, 30000L))) })
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Después", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(62.dp))
+                    Stepper(enabled, (c.postMs / 1000).toString() + " s",
+                        onMinus = { onChange(c.copy(postMs = (c.postMs - 1000).coerceIn(1000L, 20000L))) },
+                        onPlus = { onChange(c.copy(postMs = (c.postMs + 1000).coerceIn(1000L, 20000L))) })
+                }
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 ZOOMS.forEach { z ->
