@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "VoleyClips"
+rootProject.name = "Vortix"
 include(":app")

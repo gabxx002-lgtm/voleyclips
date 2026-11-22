@@ -1,4 +1,4 @@
-# VoleyClips (Android)
+# Vortix (Android)
 
 App para grabar partidos de voleibol (oficiales o de parque), llevar el marcador en vivo y quedarte solo con las jugadas.
 
@@ -7,14 +7,20 @@ App para grabar partidos de voleibol (oficiales o de parque), llevar el marcador
 0. La app se ve en vertical en el inicio y en la revisión, y gira sola a horizontal mientras grabas.
 1. En el inicio pones el nombre del partido, los dos equipos, el modo (Oficial o Parque, a 15 o a 21) y la calidad (720p ocupa menos, 1080p se ve mejor).
 2. Tocas **Grabar** y dejas el celular en un trípode. La pantalla muestra el marcador a la derecha: **+1** para cada equipo, **Deshacer** y el set en juego. El set se cierra solo al llegar al objetivo con 2 puntos de diferencia (Oficial: 25, y 15 en el quinto set; el partido termina a 3 sets).
-   Para los puntos también hay gestos: ☝ (un dedo arriba) suma un punto al equipo A y 🤟 (pulgar, índice y meñique) al equipo B.
-3. Cuando pasa una jugada buena, la guardas de tres formas:
-   - **Gesto de mano frente al lente:** 👍 guarda los 10 s anteriores, ✌ los 20 s, ✋ los 30 s. Sostén el gesto medio segundo.
-   - **Botones 10 s / 20 s / 30 s** en la pantalla.
-   - **Botones de volumen:** 1 toque = 10 s, 2 toques = 20 s, 3 toques = 30 s.
-4. Al terminar, **Detener y guardar jugadas**. Aparece la lista de jugadas, cada una con el marcador del momento. Ahí puedes bajar una sola, un resumen con todas, o **Guardar jugadas sueltas y borrar el video completo** (queda solo lo que importa, en `Movies/VoleyClips`).
+   Para los puntos también hay gestos: 👍 (pulgar arriba) suma un punto al equipo A y ✌ (paz) al equipo B.
+3. Cuando pasa una jugada buena, la guardas (siempre los 30 s anteriores) de tres formas:
+   - **Gesto de puño ✊ frente al lente.** Sostenlo 1 segundo.
+   - **Botón Guardar jugada (30 s)** en la pantalla.
+   - **Botón de volumen:** un toque.
+4. Al terminar, **Detener y guardar jugadas**. Aparece la lista de jugadas, cada una con el marcador del momento. Ahí puedes bajar una sola, un resumen con todas, o **Guardar jugadas sueltas y borrar el video completo** (queda solo lo que importa, en `Movies/Vortix`).
+
+## Estética
+
+Tinta negra sobre blanco, con los remolinos del logo de Vortix: pantalla de entrada con el logo, fondo de remolinos muy suave en el inicio y la revisión, y separadores con un rizo.
 
 ## Cosas que debes saber
+
+- Todos los videos que guarda la app llevan la marca de agua de Vortix (el logo, chiquito, en la esquina inferior derecha). El video completo que se graba no la lleva; solo las jugadas guardadas.
 
 - Los gestos solo se reconocen si la mano está cerca del lente (a 2 o 3 metros como mucho). Si el celular está lejos en un trípode, usa los botones de volumen o los de pantalla.
 - El gesto sale en el video, así que la jugada termina unos 2,5 s antes de que lo hicieras.
