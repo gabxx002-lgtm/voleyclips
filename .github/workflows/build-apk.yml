@@ -11,6 +11,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Preparar proyecto
+        run: |
+          if [ -f voleyclips-android.zip ]; then
+            mkdir -p _src
+            unzip -oq voleyclips-android.zip -d _src
+            echo "PROJ=_src/voleyclips-android" >> "$GITHUB_ENV"
+          else
+            echo "PROJ=." >> "$GITHUB_ENV"
+          fi
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -21,11 +31,11 @@ jobs:
           gradle-version: "8.7"
 
       - name: Compilar
+        working-directory: ${{ env.PROJ }}
         run: gradle assembleDebug --no-daemon --stacktrace
 
       - uses: actions/upload-artifact@v4
         with:
-          name: VoleyClips-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: Vortix-apk
+          path: ${{ env.PROJ }}/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-          
